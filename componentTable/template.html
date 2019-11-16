@@ -1,0 +1,117 @@
+<script type="text/javascript">
+$(document).on('click',function(event){
+	if($(event.target).closest('.btn-group').length==0){
+		$('.btn-group').removeClass('open');
+	};
+});
+//需要在列表隐藏时将选择的列放入localStorage，以备下次还原
+function saveCol(obj){
+	var cols={};
+	$(obj).find(':checkbox').each(function(){
+		if($(this).prop('checked')){
+			cols[$(this).attr('title')]=true;
+		};
+	});
+	var titles=new Array();
+	for(var a in cols){
+		titles.push(a);
+	};
+	localStorage.setItem('titles',angular.toJson(titles));
+}
+</script>
+
+<div class="container" style="margin-top:20px">
+	<div class="row" style="margin-bottom: 20px">
+		<h3>NgTable use component</h3>
+	</div>
+	<div class="row" style="margin-bottom: 20px">
+		<form class="form-inline" novalidate>
+            <div class="form-group">
+              	<label for="pageBinding">Set via bindings</label>
+              	<input type="number" class="form-control" id="pageBinding" min="1" placeholder="page #" ng-model="$ctrl.tableParams.page" ng-model-options="{getterSetter:true}">
+            </div>
+            <div class="form-group">
+              	<label for="page">Set via JS</label>
+            	<input type="number" class="form-control" id="page" min="1" placeholder="page #" ng-model="$ctrl.nextPageNum" ng-change="$ctrl.changePage($ctrl.nextPageNum)">
+            </div>
+       	</form>
+       </div>
+       <div class="row" style="margin-bottom: 20px">
+       	<form class="form-inline" novalidate>
+            <div class="form-group">
+            	<label for="pageSizeBinding">Set via bindings</label>
+              	<select id="pageSizeBinding" class="form-control input-sm" ng-model="$ctrl.tableParams.count" ng-model-options="{getterSetter:true}" ng-options="size for size in $ctrl.tableParams.settings().counts"></select>
+            </div>
+            <div class="form-group">
+              	<label for="pageSize">Set via JS</label>
+              	<select id="pageSizeBinding" class="form-control" ng-model="$ctrl.newPageSize" ng-options="size for size in $ctrl.tableParams.settings().counts" ng-change="$ctrl.changePageSize($ctrl.newPageSize)"></select>
+            </div>
+       	</form>
+	</div>
+	<div class="row" style="margin-bottom: 20px">
+      	<label class="radio-inline">
+        	<input type="radio" ng-model="$ctrl.tableParams.settings().filterOptions.filterComparator" ng-value="true" ng-change="$ctrl.tableParams.reload()" /> Strict
+      	</label>
+      	<label class="radio-inline">
+        	<input type="radio" ng-model="$ctrl.tableParams.settings().filterOptions.filterComparator" ng-value="false" ng-change="$ctrl.tableParams.reload()" /> Non-strict
+    	</label>
+    </div>
+	<div class="row" style="margin-bottom: 20px">
+        <label class="checkbox-inline">
+        	<input type="checkbox" ng-model="$ctrl.isFiltersEnabled" /> Enable filter row
+        </label>
+        <label class="checkbox-inline">
+          	<input type="checkbox" ng-model="$ctrl.isFiltersVisible" /> Show filter row
+        </label>
+        <label class="checkbox-inline">
+          	<input type="checkbox" ng-model="$ctrl.isAgeFilterDisabled" /> Disable age filter
+        </label>
+        <button class="btn btn-default pull-right" ng-disabled="!$ctrl.tableParams.hasFilter()" ng-click="$ctrl.tableParams.filter({})">Clear filters</button>
+	</div>
+	<div class="row" style="margin-bottom: 20px">
+     	<form name="$ctrl.searchForm" novalidate ng-submit="$ctrl.applyGlobalSearch()">
+			<div class="input-group">
+				<span class="input-group-btn">
+		        	<button type="button" class="btn btn-default dropdown-toggle" onclick="$(this).parent().toggleClass('open');" aria-haspopup="true" aria-expanded="false">Show Column <span class="caret"></span></button>
+		        	<ul class="dropdown-menu" onclick="saveCol(this)">
+			        	<li ng-repeat="col in $ctrl.cols">
+							<label class="checkbox-inline"><input type="checkbox" title="{{col.title()}}" ng-model-options="{ getterSetter: true }" ng-model="col.show"/> {{col.title()}}</label>
+						</li>
+		        	</ul>
+		      	</span>
+				<span class="input-group-addon">Except for...
+					<input type="checkbox" name="inverted" ng-model="$ctrl.isInvertedSearch" />
+				</span>
+				<input type="text" class="form-control" placeholder="Search term" name="searchTerm" ng-model="$ctrl.globalSearchTerm" required />
+				<span class="input-group-btn">
+					<button class="btn btn-primary" type="submit" ng-disabled="$ctrl.searchForm.$invalid">
+				    	<span class="glyphicon glyphicon-search"></span>
+				    </button>
+				</span>
+			</div>
+		</form>
+	</div>
+	<div class="row">
+		<script type="text/ng-template" id="componentHeaderCheckbox.html">
+			<input type="checkbox" ng-model="$ctrl.checkboxes.checked" class="select-all" value="" />
+		</script>
+		<table class="table table-condensed table-bordered table-striped table-hover" 
+			ng-table="$ctrl.tableParams" ng-table-columns-binding="$ctrl.cols" 
+			disable-filter="!$ctrl.isFiltersEnabled" show-filter="$ctrl.isFiltersVisible">
+			<colgroup>
+				<col width="5%" />
+	         		<col width="35%" />
+	         		<col width="30%" />
+	         		<col width="30%" />
+			</colgroup>
+			<tr ng-repeat="row in $data" ng-class="{ 'danger': row.money < 0, 'success': row.money > 800}">
+				<td data-title="'Id'" header="'componentHeaderCheckbox.html'" ng-if="true">
+					<input type="checkbox" ng-model="$ctrl.checkboxes.items[row.id]" />
+				</td>
+				<td data-title="'Name'" filter="{name:'text'}" sortable="$ctrl.isSortable?'name':false" ng-bind="row.name" ng-if="true"></td>
+				<td data-title="'Age'" filter="$ctrl.ageFilter()" sortable="$ctrl.isSortable?'age':false" header-class="'bg-warning'" ng-bind="row.age" ng-if="true"></td>
+				<td data-title="'Money'" filter="{money:'number'}" sortable="$ctrl.isSortable?'money':false" ng-bind="row.money | currency:'$'" ng-if="true"></td>
+			</tr>
+		</table>
+	</div>
+</div>

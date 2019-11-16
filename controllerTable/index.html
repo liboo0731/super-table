@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title></title>
+<link href="plugins/bootstrap3/css/bootstrap.css" rel="stylesheet" />
+<link href="plugins/ng-table/ng-table.css" rel="stylesheet" />
+</head>
+<body ng-app="myApp" ng-strict-di>
+	<div class="container" ng-controller="demoNgTableController as demo" style="margin-top:20px">
+		<div class="row" style="margin-bottom: 20px">
+			<h3>NgTable use controller</h3>
+		</div>
+		<!-- 分页控制 -->
+		<div class="row" style="margin-bottom: 20px">
+			<form class="form-inline" novalidate>
+	            <div class="form-group">
+	              	<label for="pageBinding">Set via bindings</label>
+	              	<input type="number" class="form-control" id="pageBinding" min="1" placeholder="page #" ng-model="demo.tableParams.page" ng-model-options="{getterSetter:true}">
+	            </div>
+	            <div class="form-group">
+	              	<label for="page">Set via JS</label>
+	            	<input type="number" class="form-control" id="page" min="1" placeholder="page #" ng-model="demo.nextPageNum" ng-change="demo.changePage(demo.nextPageNum)">
+	            </div>
+        	</form>
+        </div>
+        <div class="row" style="margin-bottom: 20px">
+        	<form class="form-inline" novalidate>
+	            <div class="form-group">
+	            	<label for="pageSizeBinding">Set via bindings</label>
+	              	<select id="pageSizeBinding" class="form-control input-sm" ng-model="demo.tableParams.count" ng-model-options="{getterSetter:true}" ng-options="size for size in demo.tableParams.settings().counts"></select>
+	            </div>
+	            <div class="form-group">
+	              	<label for="pageSize">Set via JS</label>
+	              	<select id="pageSizeBinding" class="form-control" ng-model="demo.newPageSize" ng-options="size for size in demo.tableParams.settings().counts" ng-change="demo.changePageSize(demo.newPageSize)"></select>
+	            </div>
+        	</form>
+		</div>
+		<hr>
+		<!-- 排序控制 -->
+		<div class="row" style="margin-bottom: 20px">
+        	<label class="checkbox-inline" ng-repeat="$column in demo.cols">
+          		<input type="checkbox" ng-checked="$column.sortable()" ng-click="demo.toggleSortability($column)" /> {{$column.title()}}
+        	</label>
+        	<label class="checkbox-inline">
+          		<input type="checkbox" ng-model="demo.isSortable" /> All
+        	</label>
+        	<button class="btn btn-primary btn-sm pull-right" 
+                ng-disabled="!demo.tableParams.orderBy().length"
+                ng-click="demo.tableParams.sorting({})">
+          		<span class="glyphicon glyphicon-remove"></span>
+          		Clear sorting
+        	</button>
+      	</div>
+      	<hr>
+		<!-- 过滤控制 -->
+		<div class="row" style="margin-bottom: 20px">
+	      	<label class="radio-inline">
+	        	<input type="radio" ng-model="demo.tableParams.settings().filterOptions.filterComparator" ng-value="true" ng-change="demo.tableParams.reload()" /> Strict
+	      	</label>
+	      	<label class="radio-inline">
+	        	<input type="radio" ng-model="demo.tableParams.settings().filterOptions.filterComparator" ng-value="false" ng-change="demo.tableParams.reload()" /> Non-strict
+	    	</label>
+	    </div>
+		<div class="row" style="margin-bottom: 20px">
+	        <label class="checkbox-inline">
+	        	<input type="checkbox" ng-model="demo.isFiltersEnabled" /> Enable filter row
+	        </label>
+	        <label class="checkbox-inline">
+	          	<input type="checkbox" ng-model="demo.isFiltersVisible" /> Show filter row
+	        </label>
+	        <label class="checkbox-inline">
+	          	<input type="checkbox" ng-model="demo.isAgeFilterDisabled" /> Disable age filter
+	        </label>
+	        <button class="btn btn-primary btn-sm pull-right" 
+	        	ng-disabled="!demo.tableParams.hasFilter()" 
+	        	ng-click="demo.tableParams.filter({})">
+	        	<span class="glyphicon glyphicon-remove"></span>
+	        	Clear filters
+	        </button>
+		</div>
+		<hr>
+		<!-- 列显隐 -->
+		<div style="margin-bottom: 20px">
+	        <label class="checkbox-inline" ng-repeat="col in demo.cols">
+	        	<input type="checkbox" ng-model-options="{getterSetter:true}" ng-model="col.show"/> {{col.title()}}
+	        </label>
+	    </div>
+	    <hr>
+	    <!-- 综合 -->
+		<div class="row" style="margin-bottom: 20px">
+	     	<form name="demo.searchForm" novalidate ng-submit="demo.applyGlobalSearch()">
+				<div class="input-group">
+					<span class="input-group-btn">
+			        	<button type="button" class="btn btn-default dropdown-toggle" onclick="$(this).parent().toggleClass('open');" aria-haspopup="true" aria-expanded="false">Show Column <span class="caret"></span></button>
+			        	<ul class="dropdown-menu" onclick="saveCol(this)">
+				        	<li ng-repeat="col in demo.cols">
+								<label class="checkbox-inline"><input type="checkbox" title="{{col.title()}}" ng-model-options="{getterSetter:true}" ng-model="col.show"/> {{col.title()}}</label>
+							</li>
+			        	</ul>
+			      	</span>
+					<span class="input-group-addon">Except for...
+						<input type="checkbox" name="inverted" ng-model="demo.isInvertedSearch" />
+					</span>
+					<input type="text" class="form-control" placeholder="Search term" name="searchTerm" ng-model="demo.globalSearchTerm" required />
+					<span class="input-group-btn">
+						<button class="btn btn-primary" type="submit" ng-disabled="demo.searchForm.$invalid">
+					    	<span class="glyphicon glyphicon-search"></span>
+					    </button>
+					</span>
+				</div>
+			</form>
+		</div>
+		<!-- 表格主体 -->
+		<div class="row">
+			<script type="text/ng-template" id="controllerHeaderCheckbox.html">
+				<input type="checkbox" ng-model="demo.checkboxes.checked" class="select-all" value="" />
+			</script>
+			<table class="table table-condensed table-bordered table-striped table-hover" 
+				ng-table="demo.tableParams" ng-table-columns-binding="demo.cols" 
+				disable-filter="!demo.isFiltersEnabled" show-filter="demo.isFiltersVisible">
+				<colgroup>
+					<col width="5%" />
+		         		<col width="35%" />
+		         		<col width="30%" />
+		         		<col width="30%" />
+				</colgroup>
+				<tr ng-repeat="row in $data" ng-class="{ 'danger': row.money < 0, 'success': row.money > 800}">
+					<td data-title="'Id'" header="'controllerHeaderCheckbox.html'" ng-if="true">
+						<input type="checkbox" ng-model="demo.checkboxes.items[row.id]" />
+					</td>
+					<td data-title="'Name'" filter="{name:'text'}" sortable="demo.isSortable?'name':false" ng-bind="row.name" ng-if="true"></td>
+					<td data-title="'Age'" filter="demo.ageFilter()" sortable="demo.isSortable?'age':false" header-class="'bg-warning'" ng-bind="row.age" ng-if="true"></td>
+					<td data-title="'Money'" filter="{money:'number'}" sortable="demo.isSortable?'money':false" ng-bind="row.money | currency:'$'" ng-if="true"></td>
+				</tr>
+			</table>
+		</div>
+	</div>
+
+	<script src="js/jquery.js"></script>
+	<script src="js/angular.js"></script>
+	<script src="plugins/ng-table/ng-table.js"></script>
+	<script src="js/nqjzro.js"></script>
+	<script src="app.js"></script>
+	<script type="text/javascript">
+		$(document).on('click',function(event){
+			if($(event.target).closest('.btn-group').length==0){
+				$('.btn-group').removeClass('open');
+			};
+		});
+		//需要在列表隐藏时将选择的列放入localStorage，以备下次还原
+		function saveCol(obj){
+			var cols={};
+			$(obj).find(':checkbox').each(function(){
+				if($(this).prop('checked')){
+					cols[$(this).attr('title')]=true;
+				};
+			});
+			var titles=new Array();
+			for(var a in cols){
+				titles.push(a);
+			};
+			localStorage.setItem('titles',angular.toJson(titles));
+		}
+	</script>
+</body>
+</html>
